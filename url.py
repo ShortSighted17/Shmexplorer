@@ -1,7 +1,9 @@
 import socket
 import ssl
+import gzip
 
 open_sockets = {}
+cache = {}
 
 class URL:
     
@@ -51,6 +53,10 @@ class URL:
     
     def request(self):
         
+        full_url = "{}://{}{}".format(self.scheme, self.host, self.path) if self.scheme in ["http", "https"] else self.path
+        if full_url in cache:
+            return cache[full_url]
+        
         # handling data:
         if self.scheme == "data":
             mediatype, data = self.data.split(",", 1)
@@ -64,6 +70,7 @@ class URL:
         # handling actual internet addresses:
         MAX_REDIRECTS = 10
         redirect_counter = 0
+        
         while True:
             # only create a new socket if there isn't an open one
             if (self.host, self.port) not in open_sockets.keys():
@@ -88,6 +95,7 @@ class URL:
             request += "Host: {}\r\n".format(self.host)
             request += "Connection: keep-alive\r\n"
             request += "User-Agent: Internet Shmexplorer\r\n"
+            request += "Accept-Encoding: gzip\r\n"
             request += "\r\n"
             s.send(request.encode("utf8"))
             
@@ -106,35 +114,74 @@ class URL:
                     header, value = line.split(":", 1)
                     response_headers[header.casefold()] = value.strip()
             
-            # handle redirects (error codes 300 - 399)
-            if status.startswith("3") and "location" in response_headers:
-                
-                location = response_headers["location"]
-                
-                # location is an absolute path
-                if location.startswith("http://") or location.startswith("https://"):
-                    new_url = URL(location)
-                # location is a relative path
-                else:
-                    new_url = URL("{}://{}{}".format(self.scheme, self.host, location))
-                    
-                self.scheme = new_url.scheme
-                self.host = getattr(new_url, 'host', None)
-                self.port = getattr(new_url, 'port', None)
-                self.path = new_url.path
-                self.data = getattr(new_url, 'data', None)
-                                
+            # handle redirections
+            if self.handle_redirect(response_headers, status):
                 redirect_counter += 1
                 if redirect_counter >= MAX_REDIRECTS:
                     raise Exception("Too many redirects")
                 
                 continue # if redirected - retry with new url
+            
+            # check if body is chunked
+            if response_headers.get("transfer-encoding", "").lower() == "chunked":
+                raw_content = b""
+                while True:
+                    chunk_size_line = response.readline().decode("utf8").strip()
+                    # skip empty lines
+                    if chunk_size_line == "":
+                        continue
+                    chunk_size = int(chunk_size_line, 16) # from hex to decimal
+                    # check if done
+                    if chunk_size == 0:
+                        break
+                    # general case:
+                    chunk = response.read(chunk_size)
+                    raw_content += chunk
+                    response.read(2) # read the \r\n that come after the chunk
+            
+            # if not chunked, just read all of it
+            else:
+                length = int(response_headers["content-length"])
+                raw_content = response.read(length)
+            
+            # check for compression:
+            if response_headers.get("content-encoding", "").lower() == "gzip":
+                raw_content = gzip.decompress(raw_content)
+                
+            content = raw_content.decode("utf8")
+            
+            # cache content before returning it
+            cache_control = response_headers.get("cache-control", "").lower()
+            if cache_control:
+                if "max-age" in cache_control: # cache before returning. do not cache in the general case.
+                    cache[full_url] = content
                     
-            
-            assert "transfer-encoding" not in response_headers
-            assert "content-encoding" not in response_headers
-            
-            length = int(response_headers["content-length"])
-            content = response.read(length).decode("utf8")
-            
             return content
+        
+
+
+   
+    def handle_redirect(self, response_headers, status):
+        """
+        Handle 3xx redirects. Updates self fields if needed.
+        Returns True if a redirect was followed, False otherwise.
+        """
+        if status.startswith("3") and "location" in response_headers:
+            location = response_headers["location"]
+
+            # location is an absolute path
+            if location.startswith("http://") or location.startswith("https://"):
+                new_url = URL(location)
+            # location is a relative path
+            else:
+                new_url = URL("{}://{}{}".format(self.scheme, self.host, location))
+
+            # Update self to point to the new location
+            self.scheme = new_url.scheme
+            self.host = getattr(new_url, 'host', None)
+            self.port = getattr(new_url, 'port', None)
+            self.path = new_url.path
+            self.data = getattr(new_url, 'data', None)
+
+            return True
+        return False
