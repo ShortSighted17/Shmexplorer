@@ -14,7 +14,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         url = (URL(sys.argv[1]))
     else:
-        url = URL("http://browser.engineering/redirect")
-        # url = URL("file:///Users/roinu/OneDrive/שולחן העבודה/Side Projects/Shmexplorer/default.html")
+        url = URL("https://httpbin.org/stream/20")
+        # url = URL("http://browser.engineering/redirect") # testing redirection
+        # url = URL("file:///Users/roinu/OneDrive/שולחן העבודה/Side Projects/Shmexplorer/default.html") # actual default
         
     load(url)

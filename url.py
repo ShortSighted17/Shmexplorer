@@ -122,33 +122,9 @@ class URL:
                 
                 continue # if redirected - retry with new url
             
-            # check if body is chunked
-            if response_headers.get("transfer-encoding", "").lower() == "chunked":
-                raw_content = b""
-                while True:
-                    chunk_size_line = response.readline().decode("utf8").strip()
-                    # skip empty lines
-                    if chunk_size_line == "":
-                        continue
-                    chunk_size = int(chunk_size_line, 16) # from hex to decimal
-                    # check if done
-                    if chunk_size == 0:
-                        break
-                    # general case:
-                    chunk = response.read(chunk_size)
-                    raw_content += chunk
-                    response.read(2) # read the \r\n that come after the chunk
-            
-            # if not chunked, just read all of it
-            else:
-                length = int(response_headers["content-length"])
-                raw_content = response.read(length)
-            
-            # check for compression:
-            if response_headers.get("content-encoding", "").lower() == "gzip":
-                raw_content = gzip.decompress(raw_content)
-                
-            content = raw_content.decode("utf8")
+            # the method checks for chunks and compression, and
+            # returns all of the chunks, uncompressed and decoded(utf8)
+            content = self.handle_content(response, response_headers)
             
             # cache content before returning it
             cache_control = response_headers.get("cache-control", "").lower()
@@ -185,3 +161,34 @@ class URL:
 
             return True
         return False
+    
+    
+    def handle_content(self, response, response_headers):
+        """
+        Handle chunked transfer, compression, and decoding into text.
+        Returns the decoded content (str).
+        """
+        # check if body is chunked
+        if response_headers.get("transfer-encoding", "").lower() == "chunked":
+            raw_content = b""
+            while True:
+                chunk_size_line = response.readline().decode("utf8").strip()
+                if chunk_size_line == "":
+                    continue
+                chunk_size = int(chunk_size_line, 16)
+                if chunk_size == 0:
+                    break
+                chunk = response.read(chunk_size)
+                raw_content += chunk
+                response.read(2)  # \r\n after each chunk
+        else:
+            length = int(response_headers["content-length"])
+            raw_content = response.read(length)
+
+        # check for compression
+        if response_headers.get("content-encoding", "").lower() == "gzip":
+            raw_content = gzip.decompress(raw_content)
+
+        # always decode utf-8
+        content = raw_content.decode("utf8")
+        return content
