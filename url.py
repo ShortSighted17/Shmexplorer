@@ -11,6 +11,10 @@ class URL:
         
         self.view_source = False
         
+        if url == "about:blank":
+            self.scheme = "about"
+            return
+        
         # handling data scheme:
         if url.startswith("data:"):
             self.scheme = "data"
@@ -56,6 +60,10 @@ class URL:
         full_url = "{}://{}{}".format(self.scheme, self.host, self.path) if self.scheme in ["http", "https"] else self.path
         if full_url in cache:
             return cache[full_url]
+        
+        # handling malformed url's
+        if self.scheme == "about":
+            return "" # blank page
         
         # handling data:
         if self.scheme == "data":
