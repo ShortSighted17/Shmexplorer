@@ -1,0 +1,5 @@
+BIG REFACTOR:
+    BROWSER:
+        on_resize calls layout which was moved to its own class
+        need to see how we handle emojis now
+        

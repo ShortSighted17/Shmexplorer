@@ -3,12 +3,11 @@ from tkinter import PhotoImage
 import tkinter.font
 import os
 
-from renderer import lex
 from url import URL
+from Layout import Layout, lex
 
-WIDTH, HEIGHT = 800, 600
-HSTEP, VSTEP = 13, 18
-SCROLL_STEP = 100
+from Constants import WIDTH, HEIGHT, HSTEP, VSTEP, SCROLL_STEP
+
 
 class Browser:
     def __init__(self):        
@@ -33,14 +32,15 @@ class Browser:
         except Exception:
             url = URL("about:blank")
             body = url.request()
-        # view source will not work, it just prints to the terminal instead of the screen
-        if url.view_source:
-            text = (body)
-        else:
-            text = lex(body)
         
-        self.text = text
-        self.display_list = layout(self.text)
+        
+        if url.view_source:
+            tokens = body
+        else:
+            tokens = lex(body)
+        
+        self.tokens = tokens # for use on resize if needed
+        self.display_list = Layout(tokens).display_list
         self.draw()
         
             
@@ -50,26 +50,26 @@ class Browser:
         self.canvas.delete("all")
         
         # draw text
-        for x, y, c in self.display_list:
+        for x, y, word, font in self.display_list:
             if y > self.scroll + HEIGHT: continue
-            if y + VSTEP < self.scroll: continue
+            if y + font.metrics("linespace") < self.scroll: continue
             
-            if isinstance(c, str) and c.startswith("emoji-"):
-                emoji_name = c[len("emoji-"):]
+            # if isinstance(c, str) and c.startswith("emoji-"):
+            #     emoji_name = c[len("emoji-"):]
 
-                if emoji_name not in self.emojis_images:
-                    try:
-                        path = os.path.join("emojis", "{}.png".format(emoji_name))
-                        self.emojis_images[emoji_name] = PhotoImage(file=path)
-                    except Exception:
-                        # If emoji image doesn't exist, skip it
-                        # TODO add a little default image to emojis folder to display in this case
-                        continue
+            #     if emoji_name not in self.emojis_images:
+            #         try:
+            #             path = os.path.join("emojis", "{}.png".format(emoji_name))
+            #             self.emojis_images[emoji_name] = PhotoImage(file=path)
+            #         except Exception:
+            #             # If emoji image doesn't exist, skip it
+            #             # TODO add a little default image to emojis folder to display in this case
+            #             continue
 
-                self.canvas.create_image(x, y - self.scroll, image=self.emojis_images[emoji_name], anchor="nw")
+            #     self.canvas.create_image(x, y - self.scroll, image=self.emojis_images[emoji_name], anchor="nw")
 
-            else:
-                self.canvas.create_text(x, y - self.scroll, text=c)
+            # else:
+            self.canvas.create_text(x, y - self.scroll, text=word, font=font, anchor="nw")
         
         # draw scrollbar
         full_height = self.content_height()
@@ -90,7 +90,7 @@ class Browser:
         global WIDTH, HEIGHT
         WIDTH = e.width
         HEIGHT = e.height
-        self.display_list = layout(self.text)
+        self.display_list = Layout(self.tokens).display_list
         self.draw()
     
     # scrolling handlers
@@ -115,7 +115,7 @@ class Browser:
     
     # helper method for scrolling purposes
     def content_height(self):
-        return max((y for x, y, c in self.display_list), default=0) + VSTEP
+        return max((y for x, y, word, font in self.display_list), default=0) + VSTEP
     
                 
 
@@ -129,70 +129,5 @@ class Browser:
 def is_emoji(c):
     return ord(c) >= 0x1F300
 
-
-
-# def layout(text):
-#     font = tkinter.font.Font
-#     display_list = []
-    
-#     cursor_y = VSTEP
-#     cursor_x = HSTEP
-    
-    
-#     for word in text.split():
-#         w = font.measure(word) # width of current word
-#         if (cursor_x + w) > (WIDTH - HSTEP):
-#             cursor_y += font.metrics("linespace") * 1.25
-#             cursor_x = HSTEP
-#         if c == "\n":
-#             cursor_x = HSTEP
-#             cursor_y += VSTEP
-        
-#         else:
-#             if is_emoji(c):
-#                 display_list.append((cursor_x, cursor_y, "emoji-{}".format(ord(c))))
-            
-#             # general case
-#             else:
-#                 display_list.append((cursor_x, cursor_y, c))
-            
-#             cursor_x += HSTEP
-#             if cursor_x >= WIDTH - HSTEP:
-#                 cursor_y += VSTEP
-#                 cursor_x = HSTEP
-                    
-#     return display_list
-
-
-
-# old version
-def layout(text):
-    display_list = []
-    
-    cursor_y = VSTEP
-    cursor_x = HSTEP
-    
-    
-    for c in text:
-        if c == "\n":
-            cursor_x = HSTEP
-            cursor_y += VSTEP
-        
-        else:
-            if is_emoji(c):
-                display_list.append((cursor_x, cursor_y, "emoji-{}".format(ord(c))))
-            
-            # general case
-            else:
-                display_list.append((cursor_x, cursor_y, c))
-            
-            # moving x cursor
-            cursor_x += HSTEP
-            if cursor_x >= WIDTH - HSTEP:
-                cursor_y += VSTEP
-                cursor_x = HSTEP
-                    
-    return display_list
-        
         
          
