@@ -32,9 +32,10 @@ class Layout:
         self.size = 12
         
         self.line = []
+        self.in_title = False
         for tok in tokens:
             self.token(tok)
-            
+        
         self.flush()
     
     
@@ -45,6 +46,7 @@ class Layout:
                 self.word(word)
 
         # token can only be a text or a tag, so it's a tag
+        # different styles and weights
         elif tok.tag == "i":
             style = "italic"
         elif tok.tag == "/i":
@@ -54,6 +56,7 @@ class Layout:
         elif tok.tag == "/b":
             weight = "normal"
         
+        # different sizes
         elif tok.tag == "small":
             self.size -= 2
         elif tok.tag == "/small":
@@ -62,12 +65,22 @@ class Layout:
             self.size += 4
         elif tok.tag == "/big":
             self.size -= 4
-            
+        
+        # line break
         elif tok.tag == "br":
             self.flush()
-        
+        # paragraph
         elif tok.tag == "/p":
             self.flush()
+            self.cursor_y += VSTEP
+        
+        # titles
+        elif tok.tag == "h1" and tok.attributes.get("class") == "title":
+            self.flush()
+            self.in_title = True
+        elif tok.tag == "/h1":
+            self.flush()
+            self.in_title = False
             self.cursor_y += VSTEP
     
     
@@ -87,9 +100,13 @@ class Layout:
         max_ascent = max([metric["ascent"] for metric in metrics])
         baseline = self.cursor_y + 1.25 * max_ascent
         
+        # calculate offset to center line (if needed)
+        line_width = self.line[-1][0] + self.line[-1][2].measure(self.line[-1][1]) - self.line[0][0]
+        offset_x = (WIDTH - line_width) / 2 if self.in_title else 0 
+        
         for x, word, font in self.line:
             y = baseline - font.metrics("ascent")
-            self.display_list.append((x, y, word, font))
+            self.display_list.append((x + offset_x, y, word, font))
         
         max_descent = max([metric["descent"] for metric in metrics])
         self.cursor_y = baseline + 1.25 * max_descent
