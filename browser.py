@@ -1,5 +1,6 @@
 import tkinter
 from tkinter import PhotoImage
+import tkinter.font
 import os
 
 from renderer import lex
@@ -10,10 +11,7 @@ HSTEP, VSTEP = 13, 18
 SCROLL_STEP = 100
 
 class Browser:
-    def __init__(self, rtl=False):
-        
-        self.rtl = rtl
-        
+    def __init__(self):        
         self.window = tkinter.Tk()
         self.canvas = tkinter.Canvas(
             self.window,
@@ -42,7 +40,7 @@ class Browser:
             text = lex(body)
         
         self.text = text
-        self.display_list = layout(self.text, self.rtl)
+        self.display_list = layout(self.text)
         self.draw()
         
             
@@ -92,7 +90,7 @@ class Browser:
         global WIDTH, HEIGHT
         WIDTH = e.width
         HEIGHT = e.height
-        self.display_list = layout(self.text, self.rtl)
+        self.display_list = layout(self.text)
         self.draw()
     
     # scrolling handlers
@@ -133,19 +131,51 @@ def is_emoji(c):
 
 
 
-def layout(text, rtl=False):
+# def layout(text):
+#     font = tkinter.font.Font
+#     display_list = []
+    
+#     cursor_y = VSTEP
+#     cursor_x = HSTEP
+    
+    
+#     for word in text.split():
+#         w = font.measure(word) # width of current word
+#         if (cursor_x + w) > (WIDTH - HSTEP):
+#             cursor_y += font.metrics("linespace") * 1.25
+#             cursor_x = HSTEP
+#         if c == "\n":
+#             cursor_x = HSTEP
+#             cursor_y += VSTEP
+        
+#         else:
+#             if is_emoji(c):
+#                 display_list.append((cursor_x, cursor_y, "emoji-{}".format(ord(c))))
+            
+#             # general case
+#             else:
+#                 display_list.append((cursor_x, cursor_y, c))
+            
+#             cursor_x += HSTEP
+#             if cursor_x >= WIDTH - HSTEP:
+#                 cursor_y += VSTEP
+#                 cursor_x = HSTEP
+                    
+#     return display_list
+
+
+
+# old version
+def layout(text):
     display_list = []
     
     cursor_y = VSTEP
-    if rtl:
-        cursor_x = WIDTH - HSTEP
-    else:
-        cursor_x = HSTEP
+    cursor_x = HSTEP
     
     
     for c in text:
         if c == "\n":
-            cursor_x = WIDTH - HSTEP if rtl else HSTEP
+            cursor_x = HSTEP
             cursor_y += VSTEP
         
         else:
@@ -157,16 +187,10 @@ def layout(text, rtl=False):
                 display_list.append((cursor_x, cursor_y, c))
             
             # moving x cursor
-            if rtl:
-                cursor_x -= HSTEP
-                if cursor_x <= HSTEP:
-                    cursor_y += VSTEP
-                    cursor_x = WIDTH - HSTEP
-            else:
-                cursor_x += HSTEP
-                if cursor_x >= WIDTH - HSTEP:
-                    cursor_y += VSTEP
-                    cursor_x = HSTEP
+            cursor_x += HSTEP
+            if cursor_x >= WIDTH - HSTEP:
+                cursor_y += VSTEP
+                cursor_x = HSTEP
                     
     return display_list
         

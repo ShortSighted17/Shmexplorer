@@ -13,11 +13,8 @@ if __name__ == "__main__":
     else:
         url = URL("https://browser.engineering/examples/example2-rtl.html") # testing rtl
         # url = URL("https://browser.engineering/examples/xiyouji.html") # journey to the west
-        # url = URL("file:///Users/roinu/OneDrive/שולחן העבודה/Side Projects/Shmexplorer/default.html") # actual default
-        
-    rtl = "--rtl" in sys.argv # flags whether "--rtl" was passed
-    
+        # url = URL("file:///Users/roinu/OneDrive/שולחן העבודה/Side Projects/Shmexplorer/default.html") # actual default    
         
         
-    Browser(rtl=rtl).load(url)
+    Browser().load(url)
     tkinter.mainloop()
