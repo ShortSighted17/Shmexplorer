@@ -6,4 +6,4 @@ class Tag:
         for part in part[1:]:
             if "=" in part:
                 key, value = part.split('=', 1)
-                self.attributes[key] = value
+                self.attributes[key] = value.strip('"')
