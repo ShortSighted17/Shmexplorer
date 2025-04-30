@@ -111,7 +111,8 @@ def lex(body):
             buffer = ""
         elif c == ">":
             in_tag = False
-            out.append(Tag(buffer))
+            tag_content = buffer.strip()
+            out.append(Tag(tag_content))
             buffer = ""
         else:
             buffer += c
