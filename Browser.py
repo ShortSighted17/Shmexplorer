@@ -3,7 +3,7 @@ from tkinter import PhotoImage
 import tkinter.font
 import os
 
-from url import URL
+from URL import URL
 from Layout import Layout, lex
 
 from Constants import WIDTH, HEIGHT, HSTEP, VSTEP, SCROLL_STEP

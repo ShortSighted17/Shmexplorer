@@ -1,4 +1,4 @@
-from url import URL, open_sockets
+from URL import URL, open_sockets
 from Browser import Browser
 import tkinter
 import sys
