@@ -2,7 +2,7 @@ import tkinter
 
 from Text import Text
 from Tag import Tag
-from Constants import WIDTH, HEIGHT, HSTEP, VSTEP
+from Constants import WIDTH, HEIGHT, HSTEP, VSTEP, DEFAUL_SIZE
 
 
 # helper function and fonts cache
@@ -29,10 +29,11 @@ class Layout:
         self.cursor_y = VSTEP
         self.weight = "normal"
         self.style = "roman"
-        self.size = 12
+        self.size = DEFAUL_SIZE
         
         self.line = []
         self.in_title = False
+        self.in_sup = False
         for tok in tokens:
             self.token(tok)
         
@@ -82,7 +83,15 @@ class Layout:
             self.flush()
             self.in_title = False
             self.cursor_y += VSTEP
-    
+            
+        # superscripts
+        elif tok.tag == "sup":
+            self.in_sup = True
+            self.size //= 2
+        elif tok.tag == "/sup":
+            self.in_sup = False
+            self.size *= 2
+            
     
     # deals with text tokens
     def word(self, word):
@@ -90,13 +99,13 @@ class Layout:
         w = font.measure(word)
         if self.cursor_x + w > WIDTH - HSTEP:
             self.flush()
-        self.line.append((self.cursor_x, word, font))
+        self.line.append((self.cursor_x, word, font, self.in_sup))
         self.cursor_x += w + font.measure(" ")
         
         
     def flush(self):
         if not self.line: return
-        metrics = [font.metrics() for x, word, font in self.line]
+        metrics = [font.metrics() for x, word, font, was_sup in self.line]
         max_ascent = max([metric["ascent"] for metric in metrics])
         baseline = self.cursor_y + 1.25 * max_ascent
         
@@ -104,8 +113,16 @@ class Layout:
         line_width = self.line[-1][0] + self.line[-1][2].measure(self.line[-1][1]) - self.line[0][0]
         offset_x = (WIDTH - line_width) / 2 if self.in_title else 0 
         
-        for x, word, font in self.line:
+        for x, word, font, was_sup in self.line:
             y = baseline - font.metrics("ascent")
+            
+            # adjust if in superscript
+            if was_sup:
+                # Target ascent from default font, not current font
+                normal_font = get_font(self.size * 2, self.weight, self.style)
+                y -= normal_font.metrics("ascent") * 0.35
+
+                
             self.display_list.append((x + offset_x, y, word, font))
         
         max_descent = max([metric["descent"] for metric in metrics])

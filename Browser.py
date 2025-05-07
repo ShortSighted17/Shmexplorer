@@ -39,7 +39,7 @@ class Browser:
         else:
             tokens = lex(body)
         
-        self.tokens = tokens # for use on resize if needed
+        self.tokens = tokens
         self.display_list = Layout(tokens).display_list
         self.draw()
         
@@ -118,13 +118,7 @@ class Browser:
         return max((y for x, y, word, font in self.display_list), default=0) + VSTEP
     
                 
-
-        
-        
-        
-
-            
-           
+       
 # emoji helper method
 def is_emoji(c):
     return ord(c) >= 0x1F300
