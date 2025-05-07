@@ -100,60 +100,6 @@ class Layout:
             for child in tree.children:
                 self.recurse(child)
             self.close_tag(tree)
-    
-    
-    
-    # def token(self, tok):
-        
-    #     if isinstance(tok, Text):
-    #         for word in tok.text.split():
-    #             self.word(word)
-
-    #     # token can only be a text or a tag, so it's a tag
-    #     # different styles and weights
-    #     elif tok.tag == "i":
-    #         style = "italic"
-    #     elif tok.tag == "/i":
-    #         style = "roman"
-    #     elif tok.tag == "b":
-    #         weight = "bold"
-    #     elif tok.tag == "/b":
-    #         weight = "normal"
-        
-    #     # different sizes
-    #     elif tok.tag == "small":
-    #         self.size -= 2
-    #     elif tok.tag == "/small":
-    #         self.size += 2
-    #     elif tok.tag == "big":
-    #         self.size += 4
-    #     elif tok.tag == "/big":
-    #         self.size -= 4
-        
-    #     # line break
-    #     elif tok.tag == "br":
-    #         self.flush()
-    #     # paragraph
-    #     elif tok.tag == "/p":
-    #         self.flush()
-    #         self.cursor_y += VSTEP
-        
-    #     # titles
-    #     elif tok.tag == "h1" and tok.attributes.get("class") == "title":
-    #         self.flush()
-    #         self.in_title = True
-    #     elif tok.tag == "/h1":
-    #         self.flush()
-    #         self.in_title = False
-    #         self.cursor_y += VSTEP
-            
-    #     # superscripts
-    #     elif tok.tag == "sup":
-    #         self.in_sup = True
-    #         self.size //= 2
-    #     elif tok.tag == "/sup":
-    #         self.in_sup = False
-    #         self.size *= 2
             
     
     # deals with text tokens
