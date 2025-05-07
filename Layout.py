@@ -1,4 +1,5 @@
 import tkinter
+from html import unescape
 
 from Text import Text
 from Tag import Tag
@@ -29,7 +30,7 @@ class Layout:
         self.cursor_y = VSTEP
         self.weight = "normal"
         self.style = "roman"
-        self.size = DEFAUL_SIZE
+        self.size = DEFAULT_SIZE
         
         self.line = []
         self.in_title = False
@@ -141,7 +142,7 @@ def lex(body):
     for c in body:
         if c == "<":
             in_tag = True
-            if buffer: out.append(Text(buffer))
+            if buffer: out.append(Text(unescape(buffer)))
             buffer = ""
         elif c == ">":
             in_tag = False
@@ -151,7 +152,7 @@ def lex(body):
         else:
             buffer += c
     if not in_tag and buffer:
-        out.append(Text(buffer))
+        out.append(Text(unescape(buffer)))
     return out
 
         
