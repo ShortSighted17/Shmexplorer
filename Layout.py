@@ -2,7 +2,7 @@ import tkinter
 from html import unescape
 
 from Text import Text
-from Tag import Tag
+from Element import Element
 from Constants import WIDTH, HEIGHT, HSTEP, VSTEP, DEFAULT_SIZE
 
 
@@ -21,9 +21,8 @@ def get_font(size, weight, style):
 
 class Layout:
     
-    def __init__(self, tokens):
+    def __init__(self, tree):
         
-        self.tokens = tokens
         self.display_list = []
         
         self.cursor_x = HSTEP
@@ -35,63 +34,126 @@ class Layout:
         self.line = []
         self.in_title = False
         self.in_sup = False
-        for tok in tokens:
-            self.token(tok)
+        
+        self.recurse(tree)
         
         self.flush()
     
     
-    def token(self, tok):
+    def open_tag(self, element):
+        tag = element.tag
+        attributes = element.attributes
         
-        if isinstance(tok, Text):
-            for word in tok.text.split():
-                self.word(word)
-
-        # token can only be a text or a tag, so it's a tag
-        # different styles and weights
-        elif tok.tag == "i":
-            style = "italic"
-        elif tok.tag == "/i":
-            style = "roman"
-        elif tok.tag == "b":
-            weight = "bold"
-        elif tok.tag == "/b":
-            weight = "normal"
-        
-        # different sizes
-        elif tok.tag == "small":
+        if tag == "i":
+            self.style = "italic"
+        elif tag == "b":
+            self.weight = "bold"
+        elif tag == "small":
             self.size -= 2
-        elif tok.tag == "/small":
-            self.size += 2
-        elif tok.tag == "big":
+        elif tag == "big":
             self.size += 4
-        elif tok.tag == "/big":
-            self.size -= 4
-        
-        # line break
-        elif tok.tag == "br":
+        elif tag == "br":
             self.flush()
-        # paragraph
-        elif tok.tag == "/p":
-            self.flush()
-            self.cursor_y += VSTEP
         
-        # titles
-        elif tok.tag == "h1" and tok.attributes.get("class") == "title":
+        # exercises implementation
+        elif tag == "h1" and attributes.get("class") == "title":
             self.flush()
             self.in_title = True
-        elif tok.tag == "/h1":
+        elif tag == "sup":
+            self.in_sup = True
+            self.size //= 2
+        
+    
+    
+    
+    def close_tag(self, element):
+        tag = element.tag
+        
+        if tag == "i":
+            self.style = "roman"
+        elif tag == "b":
+            self.weight = "normal"
+        elif tag == "small":
+            self.size += 2
+        elif tag == "big":
+            self.size -= 4
+        elif tag == "p":
+            self.flush()
+            self.cursor_y += VSTEP
+            
+        # exercises implementation
+        elif tag == "h1":
             self.flush()
             self.in_title = False
             self.cursor_y += VSTEP
-            
-        # superscripts
-        elif tok.tag == "sup":
-            self.in_sup = True
-            self.size //= 2
-        elif tok.tag == "/sup":
+        elif tag == "sup":
             self.in_sup = False
             self.size *= 2
+        
+    
+    def recurse(self, tree):
+        if isinstance(tree, Text):
+            for word in tree.text.split():
+                self.word(word)
+        else:
+            self.open_tag(tree)
+            for child in tree.children:
+                self.recurse(child)
+            self.close_tag(tree)
+    
+    
+    
+    # def token(self, tok):
+        
+    #     if isinstance(tok, Text):
+    #         for word in tok.text.split():
+    #             self.word(word)
+
+    #     # token can only be a text or a tag, so it's a tag
+    #     # different styles and weights
+    #     elif tok.tag == "i":
+    #         style = "italic"
+    #     elif tok.tag == "/i":
+    #         style = "roman"
+    #     elif tok.tag == "b":
+    #         weight = "bold"
+    #     elif tok.tag == "/b":
+    #         weight = "normal"
+        
+    #     # different sizes
+    #     elif tok.tag == "small":
+    #         self.size -= 2
+    #     elif tok.tag == "/small":
+    #         self.size += 2
+    #     elif tok.tag == "big":
+    #         self.size += 4
+    #     elif tok.tag == "/big":
+    #         self.size -= 4
+        
+    #     # line break
+    #     elif tok.tag == "br":
+    #         self.flush()
+    #     # paragraph
+    #     elif tok.tag == "/p":
+    #         self.flush()
+    #         self.cursor_y += VSTEP
+        
+    #     # titles
+    #     elif tok.tag == "h1" and tok.attributes.get("class") == "title":
+    #         self.flush()
+    #         self.in_title = True
+    #     elif tok.tag == "/h1":
+    #         self.flush()
+    #         self.in_title = False
+    #         self.cursor_y += VSTEP
+            
+    #     # superscripts
+    #     elif tok.tag == "sup":
+    #         self.in_sup = True
+    #         self.size //= 2
+    #     elif tok.tag == "/sup":
+    #         self.in_sup = False
+    #         self.size *= 2
             
     
     # deals with text tokens
@@ -131,30 +193,5 @@ class Layout:
         
         self.cursor_x = HSTEP
         self.line = []
-        
-        
-
-
-def lex(body):
-    out = []
-    buffer = ""
-    in_tag = False
-    for c in body:
-        if c == "<":
-            in_tag = True
-            if buffer: out.append(Text(unescape(buffer)))
-            buffer = ""
-        elif c == ">":
-            in_tag = False
-            tag_content = buffer.strip()
-            out.append(Tag(tag_content))
-            buffer = ""
-        else:
-            buffer += c
-    if not in_tag and buffer:
-        out.append(Text(unescape(buffer)))
-    return out
-
-        
         
         

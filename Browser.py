@@ -4,7 +4,8 @@ import tkinter.font
 import os
 
 from URL import URL
-from Layout import Layout, lex
+from Layout import Layout
+from HTMLParser import HTMLParser
 
 from Constants import WIDTH, HEIGHT, HSTEP, VSTEP, SCROLL_STEP
 
@@ -36,11 +37,12 @@ class Browser:
         
         if url.view_source:
             tokens = body
-        else:
-            tokens = lex(body)
+        # else:
+        #     tokens = lex(body)
         
-        self.tokens = tokens
-        self.display_list = Layout(tokens).display_list
+        self.nodes = HTMLParser(body).parse()
+        
+        self.display_list = Layout(self.nodes).display_list
         self.draw()
         
             
@@ -90,7 +92,7 @@ class Browser:
         global WIDTH, HEIGHT
         WIDTH = e.width
         HEIGHT = e.height
-        self.display_list = Layout(self.tokens).display_list
+        self.display_list = Layout(self.nodes).display_list
         self.draw()
     
     # scrolling handlers
