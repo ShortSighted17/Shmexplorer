@@ -2,7 +2,7 @@ import tkinter
 
 from Text import Text
 from Tag import Tag
-from Constants import WIDTH, HEIGHT, HSTEP, VSTEP, DEFAUL_SIZE
+from Constants import WIDTH, HEIGHT, HSTEP, VSTEP, DEFAULT_SIZE
 
 
 # helper function and fonts cache
