@@ -141,5 +141,12 @@ def print_tree(node, indent=0):
     print(" " * indent, node)
     for child in node.children:
         print_tree(child, indent + 2)
+
+# gets the tree as a nested array
+def get_tree_lines(node, indent=0):
+    lines = [" " * indent + repr(node)]
+    for child in node.children:
+        lines.extend(get_tree_lines(child, indent + 2))
+    return lines
     
     

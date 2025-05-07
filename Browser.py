@@ -5,9 +5,9 @@ import os
 
 from URL import URL
 from Layout import Layout
-from HTMLParser import HTMLParser
+from HTMLParser import HTMLParser, get_tree_lines
 
-from Constants import WIDTH, HEIGHT, HSTEP, VSTEP, SCROLL_STEP
+from Constants import WIDTH, HEIGHT, HSTEP, VSTEP, SCROLL_STEP, DEFAULT_SIZE
 
 
 class Browser:
@@ -25,9 +25,14 @@ class Browser:
         self.window.bind("<Down>", self.scrolldown)
         self.window.bind("<MouseWheel>", self.mouse_scroll)
         
+        self.display_list = []
+        self.nodes = None
+        
         self.emojis_images = {}
 
     def load(self, url):
+        # debug print:
+        print("loading url:", url.scheme, url.host, url.path)
         try:
             body = url.request()
         except Exception:
@@ -36,13 +41,24 @@ class Browser:
         
         
         if url.view_source:
-            tokens = body
-        # else:
-        #     tokens = lex(body)
+            # debug print:
+            print("Rendering in view-source mode")
+            tree = HTMLParser(body).parse()
+            lines = get_tree_lines(tree)
+            
+            self.display_list = []
+            y = VSTEP
+            # store lines in display list and return
+            for line in lines:
+                font = tkinter.font.Font(size=DEFAULT_SIZE)
+                self.display_list.append((HSTEP, y, line, font))
+                y += font.metrics("linespace")
         
-        self.nodes = HTMLParser(body).parse()
-        
-        self.display_list = Layout(self.nodes).display_list
+        else:
+            #debug print:
+            print("Rendering as formatted HTML")
+            self.nodes = HTMLParser(body).parse()
+            self.display_list = Layout(self.nodes).display_list
         self.draw()
         
             
@@ -92,7 +108,9 @@ class Browser:
         global WIDTH, HEIGHT
         WIDTH = e.width
         HEIGHT = e.height
-        self.display_list = Layout(self.nodes).display_list
+        # self.nodes == None when scheme is view-source. in this case we handle it in load.
+        if self.nodes is not None:
+            self.display_list = Layout(self.nodes).display_list
         self.draw()
     
     # scrolling handlers
