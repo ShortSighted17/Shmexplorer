@@ -39,14 +39,13 @@ class Browser:
         
         
         if url.view_source:
-            tree = HTMLParser(body).parse()
-            lines = get_tree_lines(tree)
             
+            self.nodes = body # we store the body as is, so we need to check later if nodes is str            
             self.display_list = []
             y = VSTEP
             # store lines in display list and return
-            for line in lines:
-                font = tkinter.font.Font(size=DEFAULT_SIZE)
+            for line in body.splitlines():
+                font = tkinter.font.Font(family="Courier", size=DEFAULT_SIZE)
                 self.display_list.append((HSTEP, y, line, font))
                 y += font.metrics("linespace")
         
@@ -104,8 +103,17 @@ class Browser:
         global WIDTH, HEIGHT
         WIDTH = e.width
         HEIGHT = e.height
-        # self.nodes == None when scheme is view-source. in this case we handle it in load.
-        if self.nodes is not None:
+        
+        # case: view-source, self.nodes will be raw text
+        if isinstance(self.nodes, str):
+            self.display_list = []
+            y = VSTEP
+            for line in self.nodes.splitlines():
+                font = tkinter.font.Font(family="Courier", size=DEFAULT_SIZE)
+                self.display_list.append((HSTEP, y, line, font))
+                y += font.metrics("linespace")
+        # if self.nodes is not str, use layout
+        else:
             self.display_list = Layout(self.nodes).display_list
         self.draw()
     
