@@ -31,8 +31,6 @@ class Browser:
         self.emojis_images = {}
 
     def load(self, url):
-        # debug print:
-        print("loading url:", url.scheme, url.host, url.path)
         try:
             body = url.request()
         except Exception:
@@ -41,8 +39,6 @@ class Browser:
         
         
         if url.view_source:
-            # debug print:
-            print("Rendering in view-source mode")
             tree = HTMLParser(body).parse()
             lines = get_tree_lines(tree)
             
@@ -55,10 +51,10 @@ class Browser:
                 y += font.metrics("linespace")
         
         else:
-            #debug print:
-            print("Rendering as formatted HTML")
             self.nodes = HTMLParser(body).parse()
             self.display_list = Layout(self.nodes).display_list
+            
+        
         self.draw()
         
             

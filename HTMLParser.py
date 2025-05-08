@@ -2,6 +2,7 @@ from html import unescape
 
 from Text import Text
 from Element import Element
+from Comment import Comment
 
 
 
@@ -44,9 +45,17 @@ class HTMLParser:
             else:
                 break
                 
+
+    def add_comment(self, text):
+        if not self.unfinished:
+            self.implicit_tags(None)
+            
+        parent = self.unfinished[-1]
+        node = Comment(text.strip(), parent)
+        parent.children.append(node)
+        
         
     def add_text(self, text):
-        # pay attention to named entities
         if text.isspace(): return
         
         self.implicit_tags(None)
@@ -101,6 +110,8 @@ class HTMLParser:
             node = Element(tag, attributes, parent)
             self.unfinished.append(node)
             
+
+            
             
     def finish(self):
         
@@ -117,17 +128,52 @@ class HTMLParser:
     def parse(self):
         text = ""
         in_tag = False
-        for c in self.body:
+        in_comment = False
+        comment_buffer = ""
+        i = 0
+        
+        while i < len(self.body):
+            c = self.body[i]
+            
+            # treating comments first
+            # case: start of a comment
+            if not in_comment and self.body.startswith("<!--", i):
+                if text: self.add_text(text)
+                text = ""
+                in_comment = True
+                i += 4
+                continue
+            
+            if in_comment:
+                # case: end of comment
+                if self.body.startswith("-->", i):
+                    self.add_comment(comment_buffer)
+                    comment_buffer = ""
+                    in_comment = False
+                    i += 3
+                
+                # case: inside a comment
+                else:
+                    comment_buffer += self.body[i]
+                    i += 1
+
+                continue
+            
+            
+            
             if c == "<":
                 in_tag = True
                 if text: self.add_text(text)
                 text = ""
+                i += 1
             elif c == ">":
                 in_tag = False
                 self.add_tag(text)
                 text = ""
+                i += 1
             else:
                 text += c
+                i += 1
         if not in_tag and text:
             self.add_text(text)
         return self.finish()
